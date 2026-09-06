@@ -16,5 +16,11 @@ export function createServerSupabaseClient() {
 
   return createClient(url, serviceRoleKey, {
     auth: { persistSession: false },
+    global: {
+      // Next.js(Vercel)はfetchの結果を裏側でキャッシュすることがあるため、
+      // 常に最新のデータを取得できるよう明示的にキャッシュを無効化する。
+      fetch: (input, init) =>
+        fetch(input, { ...init, cache: "no-store" }),
+    },
   });
 }
