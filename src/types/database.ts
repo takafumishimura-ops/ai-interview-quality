@@ -11,7 +11,7 @@ export interface CaRow {
 
 export interface StudentRow {
   id: string;
-  student_code: string;
+  name: string;
   created_at: string;
 }
 

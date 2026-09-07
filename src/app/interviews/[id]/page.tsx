@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { getInterviewWithRelations } from "@/lib/data/interviews";
 import { calcOsRate, formatOsRate } from "@/lib/calculations/osRate";
 import AnalyzeButton from "@/components/interviews/AnalyzeButton";
+import DeleteInterviewButton from "@/components/interviews/DeleteInterviewButton";
 import ScoreCard from "@/components/interviews/ScoreCard";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +23,7 @@ export default async function InterviewDetailPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-bold">
-            面談詳細 — {interview.ca?.name} / {interview.student?.student_code}
+            面談詳細 — {interview.ca?.name} / {interview.student?.name}
           </h1>
           <p className="text-sm text-slate-500 mt-1">
             {interview.interview_date} ・ {interview.interview_type} ・ 提案企業数:{" "}
@@ -30,7 +31,10 @@ export default async function InterviewDetailPage({
             {formatOsRate(osRate)}
           </p>
         </div>
-        <AnalyzeButton interviewId={interview.id} alreadyAnalyzed={!!analysis} />
+        <div className="flex flex-col items-end gap-2">
+          <AnalyzeButton interviewId={interview.id} alreadyAnalyzed={!!analysis} />
+          <DeleteInterviewButton interviewId={interview.id} />
+        </div>
       </div>
 
       {analysis && (

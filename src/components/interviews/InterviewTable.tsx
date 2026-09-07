@@ -7,11 +7,33 @@ function scoreOf(interview: InterviewWithRelations, key: string): number | null 
   return s?.score ?? null;
 }
 
+function scoreTier(value: number) {
+  if (value >= 4) return { label: "良好", pill: "bg-emerald-100 text-emerald-700" };
+  if (value >= 3) return { label: "普通", pill: "bg-amber-100 text-amber-700" };
+  return { label: "要改善", pill: "bg-red-100 text-red-700" };
+}
+
+/** 数値だけを色分きで表示(深掘り・提案・クロージングなど、項目別スコア用) */
 function ScoreBadge({ value }: { value: number | null }) {
   if (value === null) return <span className="text-slate-400">-</span>;
-  const color =
-    value >= 4 ? "text-emerald-600" : value >= 3 ? "text-amber-600" : "text-red-600";
-  return <span className={`font-semibold ${color}`}>{value.toFixed(1)}</span>;
+  const { pill } = scoreTier(value);
+  return (
+    <span className={`inline-block px-2 py-0.5 rounded font-semibold ${pill}`}>
+      {value.toFixed(1)}
+    </span>
+  );
+}
+
+/** 数値+一言ラベルで表示(AI総合スコア用。一目で良し悪しがわかるようにする) */
+function OverallScoreBadge({ value }: { value: number | null }) {
+  if (value === null) return <span className="text-slate-400">-</span>;
+  const { label, pill } = scoreTier(value);
+  return (
+    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded font-semibold ${pill}`}>
+      {value.toFixed(1)}
+      <span className="text-xs font-normal">({label})</span>
+    </span>
+  );
 }
 
 export default function InterviewTable({
@@ -33,6 +55,7 @@ export default function InterviewTable({
         <thead className="bg-slate-100 text-slate-600">
           <tr>
             <th className="p-3 text-left">担当者</th>
+            <th className="p-3 text-left">学生</th>
             <th className="p-3 text-left">面談日</th>
             <th className="p-3 text-left">OS結果</th>
             <th className="p-3 text-right">AI総合</th>
@@ -46,6 +69,7 @@ export default function InterviewTable({
           {interviews.map((it) => (
             <tr key={it.id} className="border-t hover:bg-slate-50">
               <td className="p-3">{it.ca?.name}</td>
+              <td className="p-3">{it.student?.name}</td>
               <td className="p-3">{it.interview_date}</td>
               <td className="p-3">
                 {it.has_os ? (
@@ -59,7 +83,7 @@ export default function InterviewTable({
                 )}
               </td>
               <td className="p-3 text-right">
-                <ScoreBadge value={it.analysis?.overall_score ?? null} />
+                <OverallScoreBadge value={it.analysis?.overall_score ?? null} />
               </td>
               <td className="p-3 text-right">
                 <ScoreBadge value={scoreOf(it, "deep_diving")} />

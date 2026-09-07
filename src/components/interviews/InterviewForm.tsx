@@ -9,7 +9,7 @@ const INTERVIEW_TYPES = ["初回面談", "複数回目面談", "内定者面談"
 export default function InterviewForm() {
   const router = useRouter();
   const [caName, setCaName] = useState("");
-  const [studentCode, setStudentCode] = useState("");
+  const [studentName, setStudentName] = useState("");
   const [interviewDate, setInterviewDate] = useState(
     () => new Date().toISOString().slice(0, 10)
   );
@@ -43,7 +43,7 @@ export default function InterviewForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           caName,
-          studentCode,
+          studentName,
           interviewDate,
           interviewType,
           transcript,
@@ -77,12 +77,12 @@ export default function InterviewForm() {
             required
           />
         </Field>
-        <Field label="学生ID" required>
+        <Field label="学生名" required>
           <input
             className="input"
-            value={studentCode}
-            onChange={(e) => setStudentCode(e.target.value)}
-            placeholder="例: STU-2026-0001"
+            value={studentName}
+            onChange={(e) => setStudentName(e.target.value)}
+            placeholder="例: 山田太郎"
             required
           />
         </Field>

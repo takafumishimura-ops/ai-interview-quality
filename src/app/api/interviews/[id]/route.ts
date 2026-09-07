@@ -38,3 +38,19 @@ export async function GET(
 
   return NextResponse.json({ interview: normalized });
 }
+
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const supabase = createServerSupabaseClient();
+
+  // interview_analyses / interview_scores は on delete cascade で連動削除される
+  const { error } = await supabase.from("interviews").delete().eq("id", params.id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

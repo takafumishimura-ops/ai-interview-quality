@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 interface CreateInterviewBody {
   caName: string;
-  studentCode: string;
+  studentName: string;
   interviewDate: string; // YYYY-MM-DD
   interviewType: string;
   transcript: string;
@@ -36,19 +36,19 @@ async function findOrCreateCa(supabase: ReturnType<typeof createServerSupabaseCl
 
 async function findOrCreateStudent(
   supabase: ReturnType<typeof createServerSupabaseClient>,
-  studentCode: string
+  studentName: string
 ) {
-  const trimmed = studentCode.trim();
+  const trimmed = studentName.trim();
   const { data: existing } = await supabase
     .from("students")
     .select("*")
-    .eq("student_code", trimmed)
+    .eq("name", trimmed)
     .maybeSingle();
   if (existing) return existing;
 
   const { data: created, error } = await supabase
     .from("students")
-    .insert({ student_code: trimmed })
+    .insert({ name: trimmed })
     .select("*")
     .single();
   if (error) throw error;
@@ -92,16 +92,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "リクエストボディが不正です" }, { status: 400 });
   }
 
-  if (!body.caName?.trim() || !body.studentCode?.trim() || !body.transcript?.trim()) {
+  if (!body.caName?.trim() || !body.studentName?.trim() || !body.transcript?.trim()) {
     return NextResponse.json(
-      { error: "担当CA名・学生ID・面談文字起こしは必須です" },
+      { error: "担当CA名・学生名・面談文字起こしは必須です" },
       { status: 400 }
     );
   }
 
   try {
     const ca = await findOrCreateCa(supabase, body.caName);
-    const student = await findOrCreateStudent(supabase, body.studentCode);
+    const student = await findOrCreateStudent(supabase, body.studentName);
 
     const proposedCompanies = body.proposedCompanies ?? [];
     const proposedCompanyCount =
