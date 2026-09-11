@@ -28,12 +28,22 @@ export interface OsImpactFactor {
   reasoning: string;
 }
 
+export interface NextActionSuggestion {
+  /** 対象の評価項目キー(EvaluationItemKey)。項目に紐づかない全体アドバイスの場合は null */
+  target_item_key: EvaluationItemKey | null;
+  /** 何を改善するかの短いタイトル */
+  title: string;
+  /** 次回の面談で具体的にどう言う・どう動けば良いかの提案(例文を含める) */
+  suggestion: string;
+}
+
 /** 単一面談分析 (POST /api/interviews/[id]/analyze) のAIレスポンス構造 */
 export interface InterviewAnalysisResult {
   scores: ScoresByItem;
   conversation_metrics: ConversationMetrics;
   student_insights: StudentInsights;
   os_impact_factors_top3: OsImpactFactor[];
+  next_action_suggestions: NextActionSuggestion[];
 }
 
 export interface ComparisonDifference {

@@ -61,6 +61,7 @@ export async function POST(
           student_challenges: result.student_insights.job_search_challenges,
           student_concerns: result.student_insights.concerns,
           os_impact_factors: result.os_impact_factors_top3,
+          next_action_suggestions: result.next_action_suggestions ?? [],
           overall_score: overallScore,
           raw_response: rawResponse,
           model,

@@ -23,6 +23,7 @@ function buildSystemPrompt(): string {
 ${buildScoreSchemaDescription()}
 
 各項目について score(1-5の整数), reason(評価理由), good_points(良かった点), improvement_points(改善点) を日本語で出力してください。
+improvement_points は「〇〇が不足していた」のような抽象的な指摘だけで終わらせず、実際の面談内容を踏まえて「この場面では、実際にはこう言っていたが、こう言い換えると良かった」「ここで、こういう質問を挟むと良かった」というように、具体的な発言例や行動例を含めてください。
 
 さらに以下の会話メトリクス・学生インサイトも抽出してください:
 - ca_talk_ratio / student_talk_ratio: CAと学生の発話比率(%, 合計100に近い値)
@@ -33,6 +34,11 @@ ${buildScoreSchemaDescription()}
 - job_search_challenges: 学生の就活における課題(配列)
 - concerns: 学生が示した懸念点(配列)
 - os_impact_factors_top3: OS(応募)の有無に影響した可能性が高い要素を重要度順に3つ、それぞれ factor と reasoning を付けて
+
+さらに、このCAが次回以降の面談で実践できる具体的な改善アクションを next_action_suggestions として3つ出力してください。
+- 12項目の中で特にスコアが低かった項目を優先して取り上げること
+- それぞれ target_item_key(該当する評価項目のkey。特定の項目に紐づかない場合は null), title(短い見出し), suggestion(次回の面談で実際に使える具体的なセリフ例・行動例を含めた提案文)を含めること
+- 抽象的な一般論(例:「もっと深掘りしましょう」)ではなく、この面談の内容に即した、すぐ実践できる提案にすること
 
 出力は必ず下記のJSON形式のみで返してください。説明文やマークダウンのコードブロックは付けないでください。
 
@@ -53,7 +59,10 @@ ${buildScoreSchemaDescription()}
     "job_search_challenges": string[],
     "concerns": string[]
   },
-  "os_impact_factors_top3": [{ "factor": string, "reasoning": string }]
+  "os_impact_factors_top3": [{ "factor": string, "reasoning": string }],
+  "next_action_suggestions": [
+    { "target_item_key": string | null, "title": string, "suggestion": string }
+  ]
 }`;
 }
 

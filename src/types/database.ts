@@ -49,6 +49,9 @@ export interface InterviewAnalysisRow {
   student_challenges: string[] | null;
   student_concerns: string[] | null;
   os_impact_factors: { factor: string; reasoning: string }[] | null;
+  next_action_suggestions:
+    | { target_item_key: string | null; title: string; suggestion: string }[]
+    | null;
   overall_score: number | null;
   raw_response: unknown;
   model: string | null;

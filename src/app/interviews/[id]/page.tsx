@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getInterviewWithRelations } from "@/lib/data/interviews";
 import { calcOsRate, formatOsRate } from "@/lib/calculations/osRate";
+import { getEvaluationItem } from "@/config/evaluationItems";
 import AnalyzeButton from "@/components/interviews/AnalyzeButton";
 import DeleteInterviewButton from "@/components/interviews/DeleteInterviewButton";
 import ScoreCard from "@/components/interviews/ScoreCard";
@@ -66,6 +67,30 @@ export default async function InterviewDetailPage({
                 </li>
               ))}
             </ol>
+          </div>
+        </div>
+      )}
+
+      {analysis && (analysis.next_action_suggestions ?? []).length > 0 && (
+        <div className="border-2 border-brand-200 rounded-lg p-4 bg-brand-50">
+          <h2 className="font-bold mb-3">次回への具体的な改善アクション</h2>
+          <div className="space-y-3">
+            {(analysis.next_action_suggestions ?? []).map((s, i) => {
+              const item = s.target_item_key ? getEvaluationItem(s.target_item_key) : undefined;
+              return (
+                <div key={i} className="border rounded-lg p-3 bg-white">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-semibold text-slate-800">{s.title}</span>
+                    {item && (
+                      <span className="text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-500">
+                        {item.labelJa}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-600">{s.suggestion}</p>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
