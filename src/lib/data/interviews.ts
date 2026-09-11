@@ -46,19 +46,25 @@ export function toAggregationInput(
 ): InterviewForAggregation[] {
   return interviews.map((it) => {
     const itemScores: Partial<Record<EvaluationItemKey, number>> = {};
+    const itemImprovementPoints: Partial<Record<EvaluationItemKey, string>> = {};
     for (const s of it.scores ?? []) {
       const key = s.evaluation_item?.key as EvaluationItemKey | undefined;
-      if (key) itemScores[key] = s.score;
+      if (key) {
+        itemScores[key] = s.score;
+        if (s.improvement_points) itemImprovementPoints[key] = s.improvement_points;
+      }
     }
     return {
       id: it.id,
       caId: it.ca_id,
       caName: it.ca?.name ?? "不明",
+      interviewDate: it.interview_date,
       osCount: it.os_count,
       proposedCompanyCount: it.proposed_company_count,
       hasOs: it.has_os,
       overallScore: it.analysis?.overall_score ?? null,
       itemScores,
+      itemImprovementPoints,
     };
   });
 }

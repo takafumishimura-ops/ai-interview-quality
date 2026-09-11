@@ -2,13 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { EVALUATION_ITEMS } from "@/config/evaluationItems";
-import { AdviserAggregate } from "@/lib/calculations/aggregations";
+import { AdviserAggregate, SCORE_THRESHOLD } from "@/lib/calculations/aggregations";
 import { formatOsRate } from "@/lib/calculations/osRate";
 
 function diffColor(diff: number) {
   if (diff > 0.15) return "text-emerald-600";
   if (diff < -0.15) return "text-red-600";
   return "text-slate-500";
+}
+
+/** 基準値(SCORE_THRESHOLD)を下回っているセルを目立たせる背景色 */
+function thresholdBg(value: number | undefined) {
+  return value !== undefined && value < SCORE_THRESHOLD ? "bg-red-50" : "";
 }
 
 export default function AdviserComparisonTable({
@@ -102,7 +107,9 @@ export default function AdviserComparisonTable({
               {EVALUATION_ITEMS.map((item) => (
                 <tr key={item.key} className="border-t">
                   <td className="p-3 text-slate-600">{item.labelJa}</td>
-                  <td className="p-3 text-right">
+                  <td
+                    className={`p-3 text-right ${thresholdBg(baseline.avgByItem[item.key])}`}
+                  >
                     {baseline.avgByItem[item.key]?.toFixed(2) ?? "-"}
                   </td>
                   {others.map((o) => {
@@ -110,7 +117,10 @@ export default function AdviserComparisonTable({
                     const v = o.avgByItem[item.key];
                     const diff = b !== undefined && v !== undefined ? v - b : 0;
                     return (
-                      <td key={o.caId} className={`p-3 text-right ${diffColor(diff)}`}>
+                      <td
+                        key={o.caId}
+                        className={`p-3 text-right ${diffColor(diff)} ${thresholdBg(v)}`}
+                      >
                         {v?.toFixed(2) ?? "-"}
                       </td>
                     );
@@ -119,8 +129,72 @@ export default function AdviserComparisonTable({
               ))}
             </tbody>
           </table>
+          <p className="text-xs text-slate-500 p-3 border-t bg-slate-50">
+            背景が赤い項目は、平均スコアが基準値({SCORE_THRESHOLD})を下回っています。
+          </p>
         </div>
       )}
+
+      <div>
+        <h2 className="font-bold mb-3">担当者ごとの最優先課題(基準値 {SCORE_THRESHOLD} 未満の項目)</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {advisers.map((a) => (
+            <div key={a.caId} className="border rounded-lg p-4 bg-white">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-semibold text-slate-800">{a.caName}</h3>
+                <span className="text-xs text-slate-400">面談{a.interviewCount}件</span>
+              </div>
+
+              {a.topPriority ? (
+                <div className="space-y-3">
+                  <div className="border border-red-200 bg-red-50 rounded-md p-3">
+                    <p className="text-xs text-red-600 font-medium mb-1">
+                      最優先で取り組むべき項目
+                    </p>
+                    <p className="font-semibold text-slate-800">
+                      {a.topPriority.labelJa}{" "}
+                      <span className="text-red-600">
+                        (平均 {a.topPriority.avgScore.toFixed(2)})
+                      </span>
+                    </p>
+                    {a.topPriority.examples.length > 0 && (
+                      <ul className="mt-2 space-y-1 text-sm text-slate-600 list-disc list-inside">
+                        {a.topPriority.examples.map((ex, i) => (
+                          <li key={i}>
+                            <span className="text-xs text-slate-400">
+                              ({ex.interviewDate} ・ {ex.score}点)
+                            </span>{" "}
+                            {ex.text}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+
+                  {a.belowThresholdItems.length > 1 && (
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">
+                        その他、基準値を下回っている項目
+                      </p>
+                      <ul className="text-sm text-slate-600 space-y-0.5">
+                        {a.belowThresholdItems.slice(1).map((it) => (
+                          <li key={it.key}>
+                            {it.labelJa}(平均 {it.avgScore.toFixed(2)})
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-emerald-600">
+                  基準値({SCORE_THRESHOLD})を下回っている項目はありません。
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
