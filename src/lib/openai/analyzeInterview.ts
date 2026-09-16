@@ -6,6 +6,7 @@ export interface AnalyzeInterviewInput {
   transcript: string;
   interviewType: string;
   proposedCompanies: string[];
+  proposedCompanyCount: number;
 }
 
 function buildScoreSchemaDescription(): string {
@@ -67,8 +68,14 @@ improvement_points は「〇〇が不足していた」のような抽象的な�
 }
 
 function buildUserPrompt(input: AnalyzeInterviewInput): string {
+  const proposedCompanyInfo =
+    input.proposedCompanies.length > 0
+      ? input.proposedCompanies.join(", ")
+      : input.proposedCompanyCount > 0
+      ? `(企業名は記録していません。提案数: ${input.proposedCompanyCount}社。文字起こし内に企業名が出てくればそれを参照してください)`
+      : "(なし)";
   return `面談種別: ${input.interviewType}
-提案企業: ${input.proposedCompanies.join(", ") || "(なし)"}
+提案企業: ${proposedCompanyInfo}
 
 --- 面談文字起こし ---
 ${input.transcript}

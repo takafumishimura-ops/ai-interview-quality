@@ -29,6 +29,7 @@ export async function POST(
       transcript: interview.transcript,
       interviewType: interview.interview_type,
       proposedCompanies: interview.proposed_companies ?? [],
+      proposedCompanyCount: interview.proposed_company_count ?? 0,
     });
 
     const { data: evaluationItems, error: itemsError } = await supabase

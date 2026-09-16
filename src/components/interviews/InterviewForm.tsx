@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { calcOsRate, formatOsRate } from "@/lib/calculations/osRate";
 
@@ -15,20 +15,11 @@ export default function InterviewForm() {
   );
   const [interviewType, setInterviewType] = useState(INTERVIEW_TYPES[0]);
   const [transcript, setTranscript] = useState("");
-  const [proposedCompaniesText, setProposedCompaniesText] = useState("");
+  const [proposedCompanyCount, setProposedCompanyCount] = useState(0);
   const [osCount, setOsCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  const proposedCompanies = useMemo(
-    () =>
-      proposedCompaniesText
-        .split(/[\n,、]/)
-        .map((s) => s.trim())
-        .filter(Boolean),
-    [proposedCompaniesText]
-  );
-  const proposedCompanyCount = proposedCompanies.length;
   const hasOs = osCount > 0;
   const osRate = calcOsRate(osCount, proposedCompanyCount);
 
@@ -47,7 +38,7 @@ export default function InterviewForm() {
           interviewDate,
           interviewType,
           transcript,
-          proposedCompanies,
+          proposedCompanies: [],
           proposedCompanyCount,
           osCount,
           hasOs,
@@ -110,18 +101,15 @@ export default function InterviewForm() {
         </Field>
       </div>
 
-      <Field label="提案企業(改行またはカンマ区切り)">
-        <textarea
-          className="input h-20"
-          value={proposedCompaniesText}
-          onChange={(e) => setProposedCompaniesText(e.target.value)}
-          placeholder={"株式会社A\n株式会社B"}
-        />
-      </Field>
-
       <div className="grid grid-cols-3 gap-4 items-end">
-        <Field label="提案企業数(自動計算)">
-          <input className="input bg-slate-100" value={proposedCompanyCount} readOnly />
+        <Field label="提案企業数">
+          <input
+            type="number"
+            min={0}
+            className="input"
+            value={proposedCompanyCount}
+            onChange={(e) => setProposedCompanyCount(Number(e.target.value))}
+          />
         </Field>
         <Field label="OS数">
           <input
