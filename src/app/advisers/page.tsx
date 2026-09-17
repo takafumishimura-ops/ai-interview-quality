@@ -12,7 +12,7 @@ export default async function AdvisersPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-bold">担当者比較</h1>
       <p className="text-sm text-slate-500">
-        担当CAごとの平均OS率・平均AIスコアを比較します。基準担当者を切り替えて他CAとの差分を確認できます。
+        担当CAごとの平均AIスコアを比較します。基準担当者を切り替えて他CAとの差分を確認できます。
       </p>
       <AdviserComparisonTable advisers={advisers} defaultBaselineName="田中" />
     </div>

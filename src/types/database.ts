@@ -26,6 +26,7 @@ export interface InterviewRow {
   proposed_company_count: number;
   os_count: number;
   has_os: boolean;
+  drive_file_id: string | null;
   created_at: string;
   updated_at: string;
 }

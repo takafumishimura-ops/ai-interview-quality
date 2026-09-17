@@ -28,8 +28,6 @@ export async function POST(
     const { result, rawResponse, model } = await analyzeInterview({
       transcript: interview.transcript,
       interviewType: interview.interview_type,
-      proposedCompanies: interview.proposed_companies ?? [],
-      proposedCompanyCount: interview.proposed_company_count ?? 0,
     });
 
     const { data: evaluationItems, error: itemsError } = await supabase
@@ -61,7 +59,6 @@ export async function POST(
           student_key_values: result.student_insights.key_values,
           student_challenges: result.student_insights.job_search_challenges,
           student_concerns: result.student_insights.concerns,
-          os_impact_factors: result.os_impact_factors_top3,
           next_action_suggestions: result.next_action_suggestions ?? [],
           overall_score: overallScore,
           raw_response: rawResponse,

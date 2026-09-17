@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { InterviewWithRelations } from "@/types/database";
-import { calcOsRate, formatOsRate } from "@/lib/calculations/osRate";
 
 function scoreOf(interview: InterviewWithRelations, key: string): number | null {
   const s = interview.scores?.find((s) => s.evaluation_item?.key === key);
@@ -57,7 +56,6 @@ export default function InterviewTable({
             <th className="p-3 text-left">担当者</th>
             <th className="p-3 text-left">学生</th>
             <th className="p-3 text-left">面談日</th>
-            <th className="p-3 text-left">OS結果</th>
             <th className="p-3 text-right">AI総合</th>
             <th className="p-3 text-right">深掘り</th>
             <th className="p-3 text-right">提案</th>
@@ -71,17 +69,6 @@ export default function InterviewTable({
               <td className="p-3">{it.ca?.name}</td>
               <td className="p-3">{it.student?.name}</td>
               <td className="p-3">{it.interview_date}</td>
-              <td className="p-3">
-                {it.has_os ? (
-                  <span className="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-xs font-medium">
-                    OSあり ({formatOsRate(calcOsRate(it.os_count, it.proposed_company_count))})
-                  </span>
-                ) : (
-                  <span className="inline-block px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-xs font-medium">
-                    OSなし
-                  </span>
-                )}
-              </td>
               <td className="p-3 text-right">
                 <OverallScoreBadge value={it.analysis?.overall_score ?? null} />
               </td>

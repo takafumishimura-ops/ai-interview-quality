@@ -4,14 +4,13 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "AI面談品質分析システム",
-  description: "CAの面談品質をAIで分析し、OS率向上要因を特定する",
+  description: "CAの面談品質をAIで分析し、面談の質を高める要因を特定する",
 };
 
 const NAV_ITEMS = [
   { href: "/interviews", label: "面談一覧" },
   { href: "/interviews/new", label: "面談登録" },
   { href: "/advisers", label: "担当者比較" },
-  { href: "/comparison", label: "成果比較" },
   { href: "/ai-comparison", label: "AI比較分析" },
 ];
 

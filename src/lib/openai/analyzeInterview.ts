@@ -5,8 +5,6 @@ import { getOpenAIClient, OPENAI_MODEL } from "./client";
 export interface AnalyzeInterviewInput {
   transcript: string;
   interviewType: string;
-  proposedCompanies: string[];
-  proposedCompanyCount: number;
 }
 
 function buildScoreSchemaDescription(): string {
@@ -30,11 +28,9 @@ improvement_points は「〇〇が不足していた」のような抽象的な�
 - ca_talk_ratio / student_talk_ratio: CAと学生の発話比率(%, 合計100に近い値)
 - question_count: CAが投げた質問の総数
 - deep_question_count: その中で深掘り質問と言えるものの数
-- proposed_company_count: 実際に提案された企業数
 - key_values: 学生が重視している価値観(配列)
 - job_search_challenges: 学生の就活における課題(配列)
 - concerns: 学生が示した懸念点(配列)
-- os_impact_factors_top3: OS(応募)の有無に影響した可能性が高い要素を重要度順に3つ、それぞれ factor と reasoning を付けて
 
 さらに、このCAが次回以降の面談で実践できる具体的な改善アクションを next_action_suggestions として3つ出力してください。
 - 12項目の中で特にスコアが低かった項目を優先して取り上げること
@@ -52,15 +48,13 @@ improvement_points は「〇〇が不足していた」のような抽象的な�
     "ca_talk_ratio": number,
     "student_talk_ratio": number,
     "question_count": number,
-    "deep_question_count": number,
-    "proposed_company_count": number
+    "deep_question_count": number
   },
   "student_insights": {
     "key_values": string[],
     "job_search_challenges": string[],
     "concerns": string[]
   },
-  "os_impact_factors_top3": [{ "factor": string, "reasoning": string }],
   "next_action_suggestions": [
     { "target_item_key": string | null, "title": string, "suggestion": string }
   ]
@@ -68,14 +62,7 @@ improvement_points は「〇〇が不足していた」のような抽象的な�
 }
 
 function buildUserPrompt(input: AnalyzeInterviewInput): string {
-  const proposedCompanyInfo =
-    input.proposedCompanies.length > 0
-      ? input.proposedCompanies.join(", ")
-      : input.proposedCompanyCount > 0
-      ? `(企業名は記録していません。提案数: ${input.proposedCompanyCount}社。文字起こし内に企業名が出てくればそれを参照してください)`
-      : "(なし)";
   return `面談種別: ${input.interviewType}
-提案企業: ${proposedCompanyInfo}
 
 --- 面談文字起こし ---
 ${input.transcript}

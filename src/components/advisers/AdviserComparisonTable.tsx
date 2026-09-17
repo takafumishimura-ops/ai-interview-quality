@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { EVALUATION_ITEMS } from "@/config/evaluationItems";
 import { AdviserAggregate, SCORE_THRESHOLD } from "@/lib/calculations/aggregations";
-import { formatOsRate } from "@/lib/calculations/osRate";
 
 function diffColor(diff: number) {
   if (diff > 0.15) return "text-emerald-600";
@@ -76,22 +75,6 @@ export default function AdviserComparisonTable({
                     {o.interviewCount}
                   </td>
                 ))}
-              </tr>
-              <tr className="border-t font-medium">
-                <td className="p-3">平均OS率</td>
-                <td className="p-3 text-right">{formatOsRate(baseline.avgOsRate)}</td>
-                {others.map((o) => {
-                  const diff = o.avgOsRate - baseline.avgOsRate;
-                  return (
-                    <td key={o.caId} className={`p-3 text-right ${diffColor(diff)}`}>
-                      {formatOsRate(o.avgOsRate)}{" "}
-                      <span className="text-xs">
-                        ({diff >= 0 ? "+" : ""}
-                        {(diff * 100).toFixed(1)}pt)
-                      </span>
-                    </td>
-                  );
-                })}
               </tr>
               <tr className="border-t font-medium">
                 <td className="p-3">平均AI総合スコア</td>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerSupabaseClient } from "@/lib/supabase/server";
 import { InterviewWithRelations } from "@/types/database";
+import { findOrCreateCa, findOrCreateStudent } from "@/lib/data/caStudent";
 
 export const dynamic = "force-dynamic";
 
@@ -10,49 +11,6 @@ interface CreateInterviewBody {
   interviewDate: string; // YYYY-MM-DD
   interviewType: string;
   transcript: string;
-  proposedCompanies: string[];
-  proposedCompanyCount: number;
-  osCount: number;
-  hasOs: boolean;
-}
-
-async function findOrCreateCa(supabase: ReturnType<typeof createServerSupabaseClient>, name: string) {
-  const trimmed = name.trim();
-  const { data: existing } = await supabase
-    .from("cas")
-    .select("*")
-    .eq("name", trimmed)
-    .maybeSingle();
-  if (existing) return existing;
-
-  const { data: created, error } = await supabase
-    .from("cas")
-    .insert({ name: trimmed })
-    .select("*")
-    .single();
-  if (error) throw error;
-  return created;
-}
-
-async function findOrCreateStudent(
-  supabase: ReturnType<typeof createServerSupabaseClient>,
-  studentName: string
-) {
-  const trimmed = studentName.trim();
-  const { data: existing } = await supabase
-    .from("students")
-    .select("*")
-    .eq("name", trimmed)
-    .maybeSingle();
-  if (existing) return existing;
-
-  const { data: created, error } = await supabase
-    .from("students")
-    .insert({ name: trimmed })
-    .select("*")
-    .single();
-  if (error) throw error;
-  return created;
 }
 
 export async function GET() {
@@ -103,12 +61,6 @@ export async function POST(req: NextRequest) {
     const ca = await findOrCreateCa(supabase, body.caName);
     const student = await findOrCreateStudent(supabase, body.studentName);
 
-    const proposedCompanies = body.proposedCompanies ?? [];
-    const proposedCompanyCount =
-      body.proposedCompanyCount ?? proposedCompanies.length;
-    const osCount = body.osCount ?? 0;
-    const hasOs = body.hasOs ?? osCount > 0;
-
     const { data: interview, error } = await supabase
       .from("interviews")
       .insert({
@@ -117,10 +69,6 @@ export async function POST(req: NextRequest) {
         interview_date: body.interviewDate,
         interview_type: body.interviewType,
         transcript: body.transcript,
-        proposed_companies: proposedCompanies,
-        proposed_company_count: proposedCompanyCount,
-        os_count: osCount,
-        has_os: hasOs,
       })
       .select("*")
       .single();

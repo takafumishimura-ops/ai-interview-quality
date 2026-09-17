@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { calcOsRate, formatOsRate } from "@/lib/calculations/osRate";
 
 const INTERVIEW_TYPES = ["初回面談", "複数回目面談", "内定者面談", "その他"];
 
@@ -15,13 +14,8 @@ export default function InterviewForm() {
   );
   const [interviewType, setInterviewType] = useState(INTERVIEW_TYPES[0]);
   const [transcript, setTranscript] = useState("");
-  const [proposedCompanyCount, setProposedCompanyCount] = useState(0);
-  const [osCount, setOsCount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  const hasOs = osCount > 0;
-  const osRate = calcOsRate(osCount, proposedCompanyCount);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -38,10 +32,6 @@ export default function InterviewForm() {
           interviewDate,
           interviewType,
           transcript,
-          proposedCompanies: [],
-          proposedCompanyCount,
-          osCount,
-          hasOs,
         }),
       });
       const data = await res.json();
@@ -98,34 +88,6 @@ export default function InterviewForm() {
               </option>
             ))}
           </select>
-        </Field>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4 items-end">
-        <Field label="提案企業数">
-          <input
-            type="number"
-            min={0}
-            className="input"
-            value={proposedCompanyCount}
-            onChange={(e) => setProposedCompanyCount(Number(e.target.value))}
-          />
-        </Field>
-        <Field label="OS数">
-          <input
-            type="number"
-            min={0}
-            className="input"
-            value={osCount}
-            onChange={(e) => setOsCount(Number(e.target.value))}
-          />
-        </Field>
-        <Field label="OS率(自動計算・保存はしません)">
-          <input
-            className="input bg-slate-100"
-            value={`${formatOsRate(osRate)}${hasOs ? " / OSあり" : " / OSなし"}`}
-            readOnly
-          />
         </Field>
       </div>
 

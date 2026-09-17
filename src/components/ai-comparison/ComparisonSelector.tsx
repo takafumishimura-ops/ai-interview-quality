@@ -7,7 +7,6 @@ export interface SelectableInterview {
   id: string;
   caName: string;
   interviewDate: string;
-  hasOs: boolean;
   overallScore: number | null;
 }
 
@@ -65,15 +64,6 @@ export default function ComparisonSelector({
             />
             <span className="w-24 font-medium">{it.caName}</span>
             <span className="w-28 text-slate-500">{it.interviewDate}</span>
-            <span
-              className={
-                it.hasOs
-                  ? "text-emerald-600 text-xs font-medium"
-                  : "text-slate-400 text-xs font-medium"
-              }
-            >
-              {it.hasOs ? "OSあり" : "OSなし"}
-            </span>
             <span className="text-slate-500 text-xs">
               総合スコア: {it.overallScore?.toFixed(2) ?? "未分析"}
             </span>

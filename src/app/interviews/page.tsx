@@ -1,6 +1,7 @@
 import Link from "next/link";
 import InterviewTable from "@/components/interviews/InterviewTable";
 import BulkReanalyzeButton from "@/components/interviews/BulkReanalyzeButton";
+import ImportFromDriveButton from "@/components/interviews/ImportFromDriveButton";
 import { getInterviewsWithRelations } from "@/lib/data/interviews";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,7 @@ export default async function InterviewsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">面談一覧</h1>
         <div className="flex items-center gap-2">
+          <ImportFromDriveButton />
           <BulkReanalyzeButton interviewIds={interviews.map((it) => it.id)} />
           <Link
             href="/interviews/new"

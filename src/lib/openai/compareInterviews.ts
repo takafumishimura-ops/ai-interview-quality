@@ -4,15 +4,14 @@ import { getOpenAIClient, OPENAI_MODEL } from "./client";
 export interface ComparisonTargetInterview {
   interviewId: string;
   caName: string;
-  hasOs: boolean;
   overallScore: number | null;
   transcriptExcerpt: string;
 }
 
 function buildSystemPrompt(): string {
   return `あなたは新卒人材紹介事業の面談品質を分析するコンサルタントです。
-複数のCA面談(成果が高い=OSした面談 / 成果が低い=OSしなかった面談 が混在)を比較し、
-何が成果の差を生んでいるかを分析してください。
+複数のCA面談(AI総合スコアが高い面談・低い面談が混在)を比較し、
+何がスコアの差を生んでいるかを分析してください。
 
 出力は必ず下記のJSON形式のみで返してください。説明文やマークダウンのコードブロックは付けないでください。
 
@@ -28,7 +27,7 @@ function buildSystemPrompt(): string {
 function buildUserPrompt(interviews: ComparisonTargetInterview[]): string {
   const blocks = interviews
     .map((it, idx) => {
-      return `【面談${idx + 1}】担当CA: ${it.caName} / OS: ${it.hasOs ? "あり" : "なし"} / AI総合スコア: ${
+      return `【面談${idx + 1}】担当CA: ${it.caName} / AI総合スコア: ${
         it.overallScore ?? "未分析"
       }
 ${it.transcriptExcerpt}`;

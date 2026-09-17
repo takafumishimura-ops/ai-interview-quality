@@ -43,7 +43,6 @@ export async function POST(req: NextRequest) {
       return {
         interviewId: row.id,
         caName: row.ca?.name ?? "不明",
-        hasOs: row.has_os,
         overallScore: analysis?.overall_score ?? null,
         transcriptExcerpt: (row.transcript as string).slice(0, TRANSCRIPT_EXCERPT_LENGTH),
       };

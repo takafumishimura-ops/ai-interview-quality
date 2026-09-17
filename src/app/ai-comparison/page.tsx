@@ -12,7 +12,6 @@ export default async function AiComparisonPage() {
     id: it.id,
     caName: it.ca?.name ?? "不明",
     interviewDate: it.interview_date,
-    hasOs: it.has_os,
     overallScore: it.analysis?.overall_score ?? null,
   }));
 

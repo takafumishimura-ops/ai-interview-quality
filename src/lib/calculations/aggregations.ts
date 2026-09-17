@@ -1,5 +1,4 @@
 import { EVALUATION_ITEM_KEYS, EvaluationItemKey, getEvaluationItem } from "@/config/evaluationItems";
-import { calcOsRate } from "./osRate";
 
 /**
  * 評価項目スコアの基準値。この値を下回った項目を「要改善」として
@@ -14,9 +13,6 @@ export interface InterviewForAggregation {
   caId: string;
   caName: string;
   interviewDate: string;
-  osCount: number;
-  proposedCompanyCount: number;
-  hasOs: boolean;
   overallScore: number | null;
   itemScores: Partial<Record<EvaluationItemKey, number>>;
   /** 各項目の改善点コメント(AI分析結果)。基準値を下回った項目の具体例として使う */
@@ -41,7 +37,6 @@ export interface AdviserAggregate {
   caId: string;
   caName: string;
   interviewCount: number;
-  avgOsRate: number;
   avgOverallScore: number | null;
   avgByItem: Partial<Record<EvaluationItemKey, number>>;
   /** 基準値(SCORE_THRESHOLD)を下回っている項目。平均スコアが低い順 */
@@ -105,10 +100,6 @@ export function aggregateByAdviser(
       caId,
       caName: list[0].caName,
       interviewCount: list.length,
-      avgOsRate:
-        average(
-          list.map((it) => calcOsRate(it.osCount, it.proposedCompanyCount))
-        ) ?? 0,
       avgOverallScore: average(
         list.map((it) => it.overallScore).filter((v): v is number => v !== null)
       ),
@@ -120,54 +111,4 @@ export function aggregateByAdviser(
 
   // 面談件数が多い順(サンプル数が少ない担当者を目立たせすぎないため)
   return result.sort((a, b) => b.interviewCount - a.interviewCount);
-}
-
-export interface OutcomeGroupAggregate {
-  label: "os" | "no_os";
-  interviewCount: number;
-  avgByItem: Partial<Record<EvaluationItemKey, number>>;
-}
-
-export interface OutcomeItemDiff {
-  key: EvaluationItemKey;
-  osAvg: number | null;
-  noOsAvg: number | null;
-  diff: number; // osAvg - noOsAvg
-}
-
-/** 機能5: 成果比較(OS有無) 用の集計 */
-export function aggregateByOutcome(interviews: InterviewForAggregation[]): {
-  os: OutcomeGroupAggregate;
-  noOs: OutcomeGroupAggregate;
-  diffs: OutcomeItemDiff[];
-} {
-  const osGroup = interviews.filter((it) => it.hasOs);
-  const noOsGroup = interviews.filter((it) => !it.hasOs);
-
-  function buildGroup(
-    label: "os" | "no_os",
-    list: InterviewForAggregation[]
-  ): OutcomeGroupAggregate {
-    const avgByItem: Partial<Record<EvaluationItemKey, number>> = {};
-    for (const key of EVALUATION_ITEM_KEYS) {
-      const scores = list
-        .map((it) => it.itemScores[key])
-        .filter((v): v is number => typeof v === "number");
-      const avg = average(scores);
-      if (avg !== null) avgByItem[key] = avg;
-    }
-    return { label, interviewCount: list.length, avgByItem };
-  }
-
-  const os = buildGroup("os", osGroup);
-  const noOs = buildGroup("no_os", noOsGroup);
-
-  const diffs: OutcomeItemDiff[] = EVALUATION_ITEM_KEYS.map((key) => {
-    const osAvg = os.avgByItem[key] ?? null;
-    const noOsAvg = noOs.avgByItem[key] ?? null;
-    const diff = osAvg !== null && noOsAvg !== null ? osAvg - noOsAvg : 0;
-    return { key, osAvg, noOsAvg, diff };
-  }).sort((a, b) => Math.abs(b.diff) - Math.abs(a.diff));
-
-  return { os, noOs, diffs };
 }

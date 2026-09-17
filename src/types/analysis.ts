@@ -14,18 +14,12 @@ export interface ConversationMetrics {
   student_talk_ratio: number;
   question_count: number;
   deep_question_count: number;
-  proposed_company_count: number;
 }
 
 export interface StudentInsights {
   key_values: string[];
   job_search_challenges: string[];
   concerns: string[];
-}
-
-export interface OsImpactFactor {
-  factor: string;
-  reasoning: string;
 }
 
 export interface NextActionSuggestion {
@@ -42,7 +36,6 @@ export interface InterviewAnalysisResult {
   scores: ScoresByItem;
   conversation_metrics: ConversationMetrics;
   student_insights: StudentInsights;
-  os_impact_factors_top3: OsImpactFactor[];
   next_action_suggestions: NextActionSuggestion[];
 }
 
