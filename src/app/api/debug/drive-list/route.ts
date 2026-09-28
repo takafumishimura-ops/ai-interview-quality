@@ -10,10 +10,29 @@ export const dynamic = "force-dynamic";
  * 原因が分かったら、このファイルは削除してOK。
  */
 export async function GET() {
-  try {
-    const drive = getDriveClient();
-    const rootId = getRootFolderId();
+  const drive = getDriveClient();
+  const rootId = getRootFolderId();
 
+  // ① フォルダそのものに、サービスアカウントがアクセスできているか
+  let folderAccess: unknown;
+  try {
+    const folderRes = await drive.files.get({
+      fileId: rootId,
+      fields: "id, name, mimeType, driveId, ownedByMe, shared",
+      supportsAllDrives: true,
+    });
+    folderAccess = { ok: true, data: folderRes.data };
+  } catch (err: any) {
+    folderAccess = {
+      ok: false,
+      error: err.message ?? String(err),
+      code: err.code ?? null,
+    };
+  }
+
+  // ② そのフォルダの「中身」を一覧できるか
+  let listing: unknown;
+  try {
     const filesRes = await drive.files.list({
       q: `'${rootId}' in parents and trashed = false`,
       fields: "files(id, name, mimeType, createdTime)",
@@ -21,11 +40,9 @@ export async function GET() {
       supportsAllDrives: true,
       includeItemsFromAllDrives: true,
     });
-
     const files = filesRes.data.files ?? [];
-
-    return NextResponse.json({
-      rootFolderId: rootId,
+    listing = {
+      ok: true,
       totalFound: files.length,
       files: files.map((f) => ({
         mimeType: f.mimeType ?? null,
@@ -33,15 +50,14 @@ export async function GET() {
         nameLength: f.name?.length ?? 0,
         createdTime: f.createdTime ?? null,
       })),
-    });
+    };
   } catch (err: any) {
-    return NextResponse.json(
-      {
-        error: err.message ?? String(err),
-        code: err.code ?? null,
-        errors: err.errors ?? null,
-      },
-      { status: 500 }
-    );
+    listing = {
+      ok: false,
+      error: err.message ?? String(err),
+      code: err.code ?? null,
+    };
   }
+
+  return NextResponse.json({ rootFolderId: rootId, folderAccess, listing });
 }
