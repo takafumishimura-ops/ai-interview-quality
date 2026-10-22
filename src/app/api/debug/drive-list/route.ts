@@ -4,16 +4,13 @@ import { getDriveClient, getRootFolderId } from "@/lib/google/driveClient";
 export const dynamic = "force-dynamic";
 
 /**
- * 一時的な診断用エンドポイント。
- * 「サービスアカウントが、実際にそのフォルダの中に何を見ているか」を、
- * ファイル名などの中身は一切表示せずに(件数・形式だけ)確認するためのもの。
- * 原因が分かったら、このファイルは削除してOK。
+ * 一時的な診断用エンドポイント。原因が分かったら削除してOK。
  */
 export async function GET() {
   const drive = getDriveClient();
   const rootId = getRootFolderId();
 
-  // ① フォルダそのものに、サービスアカウントがアクセスできているか
+  // ① フォルダそのものにアクセスできるか
   let folderAccess: unknown;
   try {
     const folderRes = await drive.files.get({
@@ -30,7 +27,7 @@ export async function GET() {
     };
   }
 
-  // ② そのフォルダの「中身」を一覧できるか
+  // ② フォルダの中身を一覧できるか
   let listing: unknown;
   try {
     const filesRes = await drive.files.list({
@@ -59,5 +56,38 @@ export async function GET() {
     };
   }
 
-  return NextResponse.json({ rootFolderId: rootId, folderAccess, listing });
+  // ③ フォルダIDを指定せず、サービスアカウントから見えているフォルダを全部出す
+  let visibleFolders: unknown;
+  try {
+    const foldersRes = await drive.files.list({
+      q: "mimeType = 'application/vnd.google-apps.folder' and trashed = false",
+      fields: "files(id, name)",
+      pageSize: 50,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
+    });
+    visibleFolders = {
+      ok: true,
+      count: foldersRes.data.files?.length ?? 0,
+      folders: (foldersRes.data.files ?? []).map((f) => ({
+        id: f.id,
+        name: f.name,
+        matchesRootId: f.id === rootId,
+      })),
+    };
+  } catch (err: any) {
+    visibleFolders = {
+      ok: false,
+      error: err.message ?? String(err),
+      code: err.code ?? null,
+    };
+  }
+
+  return NextResponse.json({
+    rootFolderId: rootId,
+    rootFolderIdLength: rootId.length,
+    folderAccess,
+    listing,
+    visibleFolders,
+  });
 }
