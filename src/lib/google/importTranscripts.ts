@@ -1,42 +1,101 @@
 import { getDriveClient, getRootFolderId } from "./driveClient";
 
+const GOOGLE_DOC_MIME = "application/vnd.google-apps.document";
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+export interface DriveCandidate {
+  fileId: string;
+  name: string;
+  mimeType: string;
+  createdTime: string | null;
+}
+
 export interface DriveTranscriptFile {
   fileId: string;
-  caName: string;
   studentName: string;
   interviewDate: string; // YYYY-MM-DD
   transcript: string;
 }
 
-export interface SkippedDriveFile {
-  name: string;
-  reason: string;
+type DriveClient = ReturnType<typeof getDriveClient>;
+
+/**
+ * ファイル名から「学生名」と「面談日」を読み取る。
+ *
+ * Nottaの実際のファイル名の例:
+ *  - "井原奏さん：就活の名人(tiktok) - 2026-09-18 10:55:33"
+ *  - "宮川 環さん：就活の名人(横山) - 2026-09-28 17:36:26.docx"
+ *  - "高橋大翔さん: 就活の名人エージェント(0101) - 2026-09-28 17:39:07"
+ * -> 「さん」より前を学生名(空白は除く)、名前の中の YYYY-MM-DD を面談日とする。
+ *
+ * 従来の形式にも対応:
+ *  - "20260917_山田太郎.txt" / "山田太郎.txt"
+ */
+export function parseFileName(name: string): {
+  studentName: string;
+  dateFromName: string | null;
+} {
+  const base = name.replace(/\.(txt|docx|doc)$/i, "").trim();
+
+  const dateInName = base.match(/(\d{4})-(\d{2})-(\d{2})/);
+  const dateFromName = dateInName
+    ? `${dateInName[1]}-${dateInName[2]}-${dateInName[3]}`
+    : null;
+
+  // 「○○さん：」「○○さん:」の形
+  const san = base.match(/^(.+?)さん\s*[：:]/);
+  if (san) {
+    return { studentName: san[1].replace(/[\s　]+/g, ""), dateFromName };
+  }
+
+  // 従来形式: 先頭に日付がある
+  const lead = base.match(/^(\d{4})[-_\/]?(\d{2})[-_\/]?(\d{2})[_\-\s]+(.+)$/);
+  if (lead) {
+    return {
+      studentName: lead[4].trim(),
+      dateFromName: `${lead[1]}-${lead[2]}-${lead[3]}`,
+    };
+  }
+
+  return { studentName: base, dateFromName };
 }
 
 /**
- * ファイル名から「学生名」と、先頭に日付が含まれていればその日付を取り出す。
- * 対応例:
- *  - "山田太郎.txt"                 -> 学生名: 山田太郎 / 日付: なし
- *  - "20260917_山田太郎.txt"        -> 学生名: 山田太郎 / 日付: 2026-09-17
- *  - "2026-09-17_山田太郎.txt"      -> 学生名: 山田太郎 / 日付: 2026-09-17
+ * Nottaは同じ面談を「Googleドキュメント」と「.docx」の2つで(1秒ずれた時刻で)
+ * 保存するため、そのまま取り込むと二重になる。
+ * 名前から拡張子と「秒」を除いたものが同じなら同じ面談とみなし、
+ * Googleドキュメントを優先して1件だけ残す。
  */
-function parseFileName(name: string): { studentName: string; dateFromName: string | null } {
-  const withoutExt = name.replace(/\.(txt|docx|doc)$/i, "");
-  const match = withoutExt.match(/^(\d{4})[-_\/]?(\d{2})[-_\/]?(\d{2})[_\-\s]+(.+)$/);
-  if (match) {
-    const [, y, mo, d, rest] = match;
-    return { studentName: rest.trim(), dateFromName: `${y}-${mo}-${d}` };
+function dedupeKey(name: string): string {
+  const base = name.replace(/\.(txt|docx|doc)$/i, "").trim();
+  return base.replace(/(\d{1,2}:\d{2}):\d{2}\s*$/, "$1");
+}
+
+export function dedupeCandidates(candidates: DriveCandidate[]): {
+  unique: DriveCandidate[];
+  duplicatesIgnored: number;
+} {
+  const byKey = new Map<string, DriveCandidate>();
+  for (const c of candidates) {
+    const key = dedupeKey(c.name);
+    const existing = byKey.get(key);
+    if (!existing) {
+      byKey.set(key, c);
+    } else if (existing.mimeType !== GOOGLE_DOC_MIME && c.mimeType === GOOGLE_DOC_MIME) {
+      byKey.set(key, c);
+    }
   }
-  return { studentName: withoutExt.trim(), dateFromName: null };
+  const unique = Array.from(byKey.values());
+  return { unique, duplicatesIgnored: candidates.length - unique.length };
 }
 
 async function extractText(
-  drive: ReturnType<typeof getDriveClient>,
+  drive: DriveClient,
   fileId: string,
   mimeType: string
 ): Promise<string> {
-  // Googleドキュメント形式(Nottaがドライブ上に直接ドキュメントとして保存するケース)
-  if (mimeType === "application/vnd.google-apps.document") {
+  if (mimeType === GOOGLE_DOC_MIME) {
     const res = await drive.files.export(
       { fileId, mimeType: "text/plain" },
       { responseType: "text" }
@@ -44,19 +103,17 @@ async function extractText(
     return (res.data as unknown as string) ?? "";
   }
 
-  // プレーンテキスト(.txt)
   if (mimeType === "text/plain") {
-    const res = await drive.files.get({ fileId, alt: "media" }, { responseType: "text" });
+    const res = await drive.files.get(
+      { fileId, alt: "media", supportsAllDrives: true },
+      { responseType: "text" }
+    );
     return (res.data as unknown as string) ?? "";
   }
 
-  // Word形式(.docx)
-  if (
-    mimeType ===
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  ) {
+  if (mimeType === DOCX_MIME) {
     const res = await drive.files.get(
-      { fileId, alt: "media" },
+      { fileId, alt: "media", supportsAllDrives: true },
       { responseType: "arraybuffer" }
     );
     const buffer = Buffer.from(res.data as ArrayBuffer);
@@ -71,75 +128,64 @@ async function extractText(
 }
 
 /**
- * Googleドライブの親フォルダ(GOOGLE_DRIVE_ROOT_FOLDER_ID)直下にある
- * 「CA名のフォルダ」ごとに、その中の面談文字起こしファイルを読み取る。
- *
- * 想定するドライブの構成:
- *   親フォルダ/
- *     田中/            <- フォルダ名 = 担当CA名(システムのCA名と一致させること)
- *       山田太郎.txt    <- ファイル名 = 学生名(先頭に日付があれば面談日として使用)
- *       ...
- *     佐藤/
- *       ...
+ * 親フォルダ(GOOGLE_DRIVE_ROOT_FOLDER_ID)直下のファイル一覧(中身はまだ読まない)。
+ * 件数が多くても短時間で返せるように、一覧の取得と本文の読み取りを分けている。
  */
-export async function listTranscriptFilesFromDrive(): Promise<{
-  files: DriveTranscriptFile[];
-  skippedFiles: SkippedDriveFile[];
-}> {
+export async function listDriveCandidates(): Promise<DriveCandidate[]> {
   const drive = getDriveClient();
   const rootId = getRootFolderId();
 
-  const foldersRes = await drive.files.list({
-    q: `'${rootId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
-    fields: "files(id, name)",
-    pageSize: 200,
-  });
-  const folders = foldersRes.data.files ?? [];
-
-  const files: DriveTranscriptFile[] = [];
-  const skippedFiles: SkippedDriveFile[] = [];
-
-  for (const folder of folders) {
-    if (!folder.id || !folder.name) continue;
-    const caName = folder.name.trim();
-
-    const filesRes = await drive.files.list({
-      q: `'${folder.id}' in parents and trashed = false`,
-      fields: "files(id, name, mimeType, createdTime)",
-      pageSize: 500,
+  const candidates: DriveCandidate[] = [];
+  let pageToken: string | undefined;
+  do {
+    const res = await drive.files.list({
+      q: `'${rootId}' in parents and trashed = false and mimeType != 'application/vnd.google-apps.folder'`,
+      fields: "nextPageToken, files(id, name, mimeType, createdTime)",
+      pageSize: 200,
+      pageToken,
+      supportsAllDrives: true,
+      includeItemsFromAllDrives: true,
     });
-    const driveFiles = filesRes.data.files ?? [];
-
-    for (const f of driveFiles) {
+    for (const f of res.data.files ?? []) {
       if (!f.id || !f.name) continue;
-      const label = `${caName}/${f.name}`;
-      try {
-        const text = await extractText(drive, f.id, f.mimeType ?? "");
-        if (!text.trim()) {
-          skippedFiles.push({ name: label, reason: "文字起こしの中身が空でした" });
-          continue;
-        }
-
-        const { studentName, dateFromName } = parseFileName(f.name);
-        if (!studentName) {
-          skippedFiles.push({ name: label, reason: "ファイル名から学生名を判定できませんでした" });
-          continue;
-        }
-        const interviewDate =
-          dateFromName ?? (f.createdTime ? f.createdTime.slice(0, 10) : new Date().toISOString().slice(0, 10));
-
-        files.push({
-          fileId: f.id,
-          caName,
-          studentName,
-          interviewDate,
-          transcript: text,
-        });
-      } catch (err: any) {
-        skippedFiles.push({ name: label, reason: err.message ?? "読み込みに失敗しました" });
-      }
+      candidates.push({
+        fileId: f.id,
+        name: f.name,
+        mimeType: f.mimeType ?? "",
+        createdTime: f.createdTime ?? null,
+      });
     }
+    pageToken = res.data.nextPageToken ?? undefined;
+  } while (pageToken);
+
+  return candidates;
+}
+
+/** 1ファイルの本文を読み取り、取り込み用のデータにする。失敗時は理由つきでthrowする。 */
+export async function readTranscript(
+  candidate: DriveCandidate
+): Promise<DriveTranscriptFile> {
+  const drive = getDriveClient();
+  const text = await extractText(drive, candidate.fileId, candidate.mimeType);
+  if (!text.trim()) {
+    throw new Error("文字起こしの中身が空でした");
   }
 
-  return { files, skippedFiles };
+  const { studentName, dateFromName } = parseFileName(candidate.name);
+  if (!studentName) {
+    throw new Error("ファイル名から学生名を判定できませんでした");
+  }
+
+  const interviewDate =
+    dateFromName ??
+    (candidate.createdTime
+      ? candidate.createdTime.slice(0, 10)
+      : new Date().toISOString().slice(0, 10));
+
+  return {
+    fileId: candidate.fileId,
+    studentName,
+    interviewDate,
+    transcript: text,
+  };
 }

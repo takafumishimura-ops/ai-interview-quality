@@ -64,9 +64,21 @@ export default function InterviewTable({
           </tr>
         </thead>
         <tbody>
-          {interviews.map((it) => (
-            <tr key={it.id} className="border-t hover:bg-slate-50">
-              <td className="p-3">{it.ca?.name}</td>
+          {interviews.map((it) => {
+            const needsCaAssignment = it.ca?.name === "未設定";
+            return (
+            <tr
+              key={it.id}
+              className={`border-t hover:bg-slate-50 ${needsCaAssignment ? "bg-amber-50" : ""}`}
+            >
+              <td className="p-3">
+                {it.ca?.name}
+                {needsCaAssignment && (
+                  <span className="ml-2 text-xs text-amber-600 font-medium">
+                    要:担当CA名を設定
+                  </span>
+                )}
+              </td>
               <td className="p-3">{it.student?.name}</td>
               <td className="p-3">{it.interview_date}</td>
               <td className="p-3 text-right">
@@ -87,7 +99,8 @@ export default function InterviewTable({
                 </Link>
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

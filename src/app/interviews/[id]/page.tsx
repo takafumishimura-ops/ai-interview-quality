@@ -3,6 +3,7 @@ import { getInterviewWithRelations } from "@/lib/data/interviews";
 import { getEvaluationItem } from "@/config/evaluationItems";
 import AnalyzeButton from "@/components/interviews/AnalyzeButton";
 import DeleteInterviewButton from "@/components/interviews/DeleteInterviewButton";
+import EditInterviewMetaForm from "@/components/interviews/EditInterviewMetaForm";
 import ScoreCard from "@/components/interviews/ScoreCard";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,15 @@ export default async function InterviewDetailPage({
           <p className="text-sm text-slate-500 mt-1">
             {interview.interview_date} ・ {interview.interview_type}
           </p>
+          <div className="mt-2">
+            <EditInterviewMetaForm
+              interviewId={interview.id}
+              initialCaName={interview.ca?.name ?? ""}
+              initialStudentName={interview.student?.name ?? ""}
+              initialInterviewDate={interview.interview_date}
+              initialInterviewType={interview.interview_type}
+            />
+          </div>
         </div>
         <div className="flex flex-col items-end gap-2">
           <AnalyzeButton interviewId={interview.id} alreadyAnalyzed={!!analysis} />
